@@ -1,10 +1,10 @@
-/* MediaWiki:Gadget-citizenCollapsibleSidebar.css */ /* 可折叠的标题：手型光标 + 箭头占位 */ .citizen-sidebar-heading--collapsible {
+/* 可点击的触发元素 */ .citizen-sidebar-toggle {
     cursor: pointer;
+    user-select: none;
     position: relative;
     padding-right: 1.5em;
-     /* 给箭头留空间 */ user-select: none;
 }
-/* 默认箭头（展开状态）：向下 */ .citizen-sidebar-heading--collapsible:: after {
+/* 指示箭头 */ .citizen-sidebar-toggle:: after {
     content: "";
     position: absolute;
     right: 0.5em;
@@ -14,11 +14,8 @@
     border-right: 4px solid transparent;
     border-top: 5px solid currentColor;
     opacity: 0.6;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s;
 }
-/* 折叠状态：箭头旋转为向右（或向上），这里用旋转 90 度表示 */ .citizen-sidebar-heading--collapsed:: after {
+.citizen-sidebar-toggle.citizen-sidebar-collapsed:: after {
     transform: translateY(-50%) rotate(-90deg);
-}
-/* 可选：悬停时加深箭头 */ .citizen-sidebar-heading--collapsible: hover:: after {
-    opacity: 1;
 }

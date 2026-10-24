@@ -1,22 +1,38 @@
-/* MediaWiki:Gadget-citizenCollapsibleSidebar.js */(function () {
-    'use strict'; var STORAGE_KEY = 'citizenCollapsibleSidebarState'; function getSidebarRoot() {
-         // Citizen 侧边栏可能出现在常规侧栏或抽屉中，优先使用更具体的容器
-        return document.querySelector('.citizen-sidebar, .citizen-drawer__menu');
+(function () {
+    'use strict'; var STORAGE_KEY = 'citizenCollapsibleSidebarState_v2'; function init() {
+         // 覆盖常规侧边栏和抽屉
+        var roots = document.querySelectorAll('.citizen-sidebar, .citizen-drawer__menu, #mw-panel, .mw-portlet'); if (!roots.length) return; var state = loadState(); roots.forEach(function (root) {
+             // 在根容器内寻找可能的“菜单区块”
+             // 不限定 heading 类名，而是找紧邻 <ul> 的块级元素
+            var candidates = root.querySelectorAll('div, h2, h3, summary, dt, span'); candidates.forEach(function (el) {
+                if (el.dataset.citizenCollapsibleBound) return; var list = el.nextElementSibling; // 关键：只处理后面紧跟着 <ul> 的元素
+                if (!list || list.tagName !== 'UL') return; el.dataset.citizenCollapsibleBound = '1'; makeToggle(el, list, state);
+            });
+        });
     }
-    function getMenuHeadings(root) {
-        if (!root) return []; // 菜单标题带有 citizen-menu__heading 类
-        return root.querySelectorAll('.citizen-menu__heading');
-    }
-    function getTargetList(heading) {
-         // 标题的相邻下一个元素通常是 <ul>，但需跳过非列表节点
-        var el = heading.nextElementSibling; while (el && el.tagName !== 'UL') {
-            el = el.nextElementSibling;
+    function makeToggle(trigger, list, state) {
+        var key =(trigger.id || trigger.textContent.trim().slice(0, 60)).replace( /\s+/g, ' '); if (!key) return; // 恢复状态
+        if (state[key] === true) {
+            list.style.display = 'none'; trigger.classList.add('citizen-sidebar-collapsed'); trigger.setAttribute('aria-expanded', 'false');
         }
-        return el;
+        trigger.classList.add('citizen-sidebar-toggle'); trigger.setAttribute('role', 'button'); trigger.setAttribute('tabindex', '0'); function toggle() {
+            var isHidden = list.style.display === 'none'; if (isHidden) {
+                list.style.display = ''; trigger.classList.remove('citizen-sidebar-collapsed'); trigger.setAttribute('aria-expanded', 'true'); delete state[key];
+            }
+            else {
+                list.style.display = 'none'; trigger.classList.add('citizen-sidebar-collapsed'); trigger.setAttribute('aria-expanded', 'false'); state[key] = true;
+            }
+            saveState(state);
+        }
+        trigger.addEventListener('click', toggle); trigger.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); toggle();
+            }
+        });
     }
     function loadState() {
         try {
-            var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw): {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             };
         }
         catch (e) {
@@ -29,42 +45,8 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }
         catch (e) {
-             // localStorage 不可用时静默失败
         }
     }
-    function makeHeadingInteractive(heading, list, state) {
-        var key = heading.id || heading.textContent.trim().slice(0, 50); if (!key) return; // 如果状态中已记录为折叠，则立即应用
-        if (state[key] === true) {
-            list.style.display = 'none'; heading.classList.add('citizen-sidebar-heading--collapsed');
-        }
-         // 添加可点击的视觉提示（CSS 中控制箭头等）
-        heading.classList.add('citizen-sidebar-heading--collapsible'); heading.setAttribute('role', 'button'); heading.setAttribute('tabindex', '0'); heading.setAttribute('aria-expanded', state[key] === true ? 'false': 'true'); function toggle() {
-            var isCollapsed = list.style.display === 'none'; if (isCollapsed) {
-                list.style.display = ''; heading.classList.remove('citizen-sidebar-heading--collapsed'); heading.setAttribute('aria-expanded', 'true'); delete state[key];
-            }
-            else {
-                list.style.display = 'none'; heading.classList.add('citizen-sidebar-heading--collapsed'); heading.setAttribute('aria-expanded', 'false'); state[key] = true;
-            }
-            saveState(state);
-        }
-        heading.addEventListener('click', toggle); heading.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault(); toggle();
-            }
-        });
-    }
-    function init() {
-        var root = getSidebarRoot(); if (!root) return; var headings = getMenuHeadings(root); if (!headings.length) return; var state = loadState(); headings.forEach(function (heading) {
-            var list = getTargetList(heading); if (list) {
-                makeHeadingInteractive(heading, list, state);
-            }
-        });
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    }
-    else {
-        init();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 }
 ());
